@@ -1,0 +1,9 @@
+{
+	"name": "df-azure-project-swap",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "7c5943ee-0098-4677-8dee-67ebbfbc9c09",
+		"tenantId": "9f7c7551-cd79-46f6-94de-7c383ad2887d"
+	}
+}
