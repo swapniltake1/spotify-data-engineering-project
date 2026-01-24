@@ -6,9 +6,14 @@
 			{
 				"name": "Copy data1",
 				"type": "Copy",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "last_cdc",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -18,6 +23,15 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * FROM @{pipeline().parameters.schema}.@{pipeline().parameters.table} Where @{pipeline().parameters.cdc_col} > activity('last_cdc').output",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
 					"sink": {
 						"type": "JsonSink",
 						"storeSettings": {
@@ -29,6 +43,12 @@
 					},
 					"enableStaging": false
 				},
+				"inputs": [
+					{
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					}
+				],
 				"outputs": [
 					{
 						"referenceName": "Json_dynamic",
