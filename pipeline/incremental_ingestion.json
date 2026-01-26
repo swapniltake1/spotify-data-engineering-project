@@ -186,8 +186,6 @@
 						{
 							"name": "Updating_last_cdc",
 							"type": "Copy",
-							"state": "Inactive",
-							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [
 								{
 									"activity": "Script_Activity for max cdc",
