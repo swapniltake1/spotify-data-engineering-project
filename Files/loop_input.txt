@@ -1,0 +1,37 @@
+[
+  {
+    "schema": "dbo",
+    "table": "DIMUSER",
+    "cdc_col": "updated_at",
+    "cdc_type": "datetime",
+    "from_date": ""
+  },
+  {
+    "schema": "dbo",
+    "table": "DIMTRACK",
+    "cdc_col": "updated_at",
+    "cdc_type": "datetime",
+    "from_date": ""
+  },
+  {
+    "schema": "dbo",
+    "table": "DIMDATE",
+    "cdc_col": "[date]",
+    "cdc_type": "date",
+    "from_date": ""
+  },
+  {
+    "schema": "dbo",
+    "table": "DIMARTIST",
+    "cdc_col": "updated_at",
+    "cdc_type": "datetime",
+    "from_date": ""
+  },
+  {
+    "schema": "dbo",
+    "table": "FactStream",
+    "cdc_col": "stream_timestamp",
+    "cdc_type": "datetime",
+    "from_date": ""
+  }
+]
