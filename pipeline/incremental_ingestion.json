@@ -133,7 +133,8 @@
 				}
 			},
 			{
-				"name": "If Condition1",
+				"name": "ifincreamentaldata",
+				"description": "",
 				"type": "IfCondition",
 				"dependsOn": [
 					{
@@ -145,9 +146,13 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('Copy data to bronze').output.dataRead, 0)",
+						"type": "Expression"
+					},
 					"ifFalseActivities": [
 						{
-							"name": "Delete1",
+							"name": "DeleteEmptyFile",
 							"type": "Delete",
 							"dependsOn": [],
 							"policy": {
@@ -159,7 +164,21 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"enableLogging": true
+								"dataset": {
+									"referenceName": "Json_dynamic",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": "bronze",
+										"folder": "@pipeline().parameters.table",
+										"cdc": "@concat(pipeline().parameters.table, '_' ,variables('current'))"
+									}
+								},
+								"enableLogging": false,
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
 							}
 						}
 					],
@@ -167,6 +186,8 @@
 						{
 							"name": "Updating_last_cdc",
 							"type": "Copy",
+							"state": "Inactive",
+							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [
 								{
 									"activity": "Script_Activity for max cdc",
@@ -190,7 +211,7 @@
 										{
 											"name": "cdc",
 											"value": {
-												"value": "dynamiccontent",
+												"value": "@activity('Script_Activity for max cdc').output.resultSets[0].rows[0].cdc",
 												"type": "Expression"
 											}
 										}
