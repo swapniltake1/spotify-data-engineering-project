@@ -112,7 +112,7 @@
 						"parameters": {
 							"container": "bronze",
 							"folder": {
-								"value": "@pipeline().parameters.table",
+								"value": "@{pipeline().parameters.table}_CDC",
 								"type": "Expression"
 							},
 							"cdc": "cdc.json"
