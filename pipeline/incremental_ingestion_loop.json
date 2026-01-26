@@ -346,7 +346,7 @@
 					},
 					{
 						"schema": "dbo",
-						"table": "FactStream",
+						"table": "FACTSTREAM",
 						"cdc_col": "stream_timestamp",
 						"from_date": ""
 					}
