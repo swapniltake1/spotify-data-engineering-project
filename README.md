@@ -4,7 +4,7 @@
 ![ADF](https://img.shields.io/badge/Azure-Data%20Factory-orange)
 ![Databricks](https://img.shields.io/badge/Databricks-PySpark-red)
 ![Delta](https://img.shields.io/badge/Delta-Lake-green)
-![Status](https://img.shields.io/badge/Status-Completed-success)
+![Status](https://img.shields.io/badge/Status-Inprogress-success)
 
 ---
 
