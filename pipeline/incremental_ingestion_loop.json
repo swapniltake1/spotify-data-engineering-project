@@ -319,7 +319,38 @@
 		"parameters": {
 			"loop_input": {
 				"type": "array",
-				"defaultValue": "[   {     \"schema\" : \"dbo\",     \"table\" : \"DIMUSER\",     \"cdc_col\" : \"updated_at\",     \"from_date\" : \"\"   },   {     \"schema\" : \"dbo\",     \"table\" : \"DIMTRACK\",     \"cdc_col\" : \"updated_at\",     \"from_date\" : \"\"   },   {     \"schema\" : \"dbo\",     \"table\" : \"DIMDATE\",     \"cdc_col\" : \"date\",     \"from_date\" : \"\"   },   {     \"schema\" : \"dbo\",     \"table\" : \"DIMARTIST\",     \"cdc_col\" : pdated_at\",     \"from_date\" : \"\"   },   {     \"schema\" : \"dbo\",     \"table\" : \"FactStream\",     \"cdc_col\" : \"stream_timestamp\",     \"fro\"um_date\" : \"\"   } ]"
+				"defaultValue": [
+					{
+						"schema": "dbo",
+						"table": "DIMUSER",
+						"cdc_col": "updated_at",
+						"from_date": ""
+					},
+					{
+						"schema": "dbo",
+						"table": "DIMTRACK",
+						"cdc_col": "updated_at",
+						"from_date": ""
+					},
+					{
+						"schema": "dbo",
+						"table": "DIMDATE",
+						"cdc_col": "date",
+						"from_date": ""
+					},
+					{
+						"schema": "dbo",
+						"table": "DIMARTIST",
+						"cdc_col": "updated_at",
+						"from_date": ""
+					},
+					{
+						"schema": "dbo",
+						"table": "FactStream",
+						"cdc_col": "stream_timestamp",
+						"from_date": ""
+					}
+				]
 			}
 		},
 		"variables": {
