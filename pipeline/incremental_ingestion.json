@@ -32,7 +32,7 @@
 					"source": {
 						"type": "AzureSqlSource",
 						"sqlReaderQuery": {
-							"value": "select * FROM @{pipeline().parameters.schema}.@{pipeline().parameters.table} Where @{pipeline().parameters.cdc_col} >   '@{activity('look for last_cdc').output.value[0].cdc}'",
+							"value": "SELECT *\nFROM @{pipeline().parameters.schema}.@{pipeline().parameters.table}\nWHERE @{pipeline().parameters.cdc_col} >\n'@{if(empty(pipeline().parameters.from_date),\n       activity('look for last_cdc').output.value[0].cdc,\n       pipeline().parameters.from_date)}'\n",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00",
@@ -69,7 +69,10 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"container": "bronze",
-							"folder": "Users",
+							"folder": {
+								"value": "@pipeline().parameters.table",
+								"type": "Expression"
+							},
 							"file": {
 								"value": "@concat(pipeline().parameters.table, '_' ,variables('current'))",
 								"type": "Expression"
@@ -108,7 +111,10 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"container": "bronze",
-							"folder": "cdc",
+							"folder": {
+								"value": "@{pipeline().parameters.table}_CDC",
+								"type": "Expression"
+							},
 							"cdc": "cdc.json"
 						}
 					},
@@ -186,8 +192,6 @@
 						{
 							"name": "Updating_last_cdc",
 							"type": "Copy",
-							"state": "Inactive",
-							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [
 								{
 									"activity": "Script_Activity for max cdc",
@@ -242,7 +246,10 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"container": "bronze",
-										"folder": "cdc",
+										"folder": {
+											"value": "@{pipeline().parameters.table}_CDC",
+											"type": "Expression"
+										},
 										"cdc": "empty.json"
 									}
 								}
@@ -253,7 +260,10 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"container": "bronze",
-										"folder": "cdc",
+										"folder": {
+											"value": "@{pipeline().parameters.table}_CDC",
+											"type": "Expression"
+										},
 										"cdc": "cdc.json"
 									}
 								}
@@ -300,6 +310,9 @@
 				"type": "string"
 			},
 			"cdc_col": {
+				"type": "string"
+			},
+			"from_date": {
 				"type": "string"
 			}
 		},
