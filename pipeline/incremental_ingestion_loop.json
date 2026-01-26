@@ -4,7 +4,7 @@
 		"description": "without parameter loop",
 		"activities": [
 			{
-				"name": "ForEach1",
+				"name": "DataLoodingLoop",
 				"type": "ForEach",
 				"dependsOn": [],
 				"userProperties": [],
