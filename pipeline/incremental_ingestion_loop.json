@@ -187,11 +187,11 @@
 												"parameters": {
 													"container": "bronze",
 													"folder": {
-														"value": "@{item().table}",
+														"value": "@item().table\n",
 														"type": "Expression"
 													},
 													"cdc": {
-														"value": "@{item().table, '_' ,variables('current'))}",
+														"value": "@concat(item().table, '_', variables('current'))\r\n\r\n",
 														"type": "Expression"
 													}
 												}
