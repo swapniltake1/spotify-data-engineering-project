@@ -329,7 +329,9 @@
 						"activity": "DataLoadingLoop",
 						"dependencyConditions": [
 							"Failed",
-							"Skipped"
+							"Skipped",
+							"Succeeded",
+							"Completed"
 						]
 					}
 				],
