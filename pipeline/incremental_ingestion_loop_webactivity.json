@@ -322,7 +322,7 @@
 				}
 			},
 			{
-				"name": "Web1",
+				"name": "Web_Activity",
 				"type": "WebActivity",
 				"dependsOn": [
 					{
