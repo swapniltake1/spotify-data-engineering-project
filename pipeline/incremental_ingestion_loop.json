@@ -186,8 +186,14 @@
 												"type": "DatasetReference",
 												"parameters": {
 													"container": "bronze",
-													"folder": "@pipeline().parameters.table",
-													"cdc": "@concat(pipeline().parameters.table, '_' ,variables('current'))"
+													"folder": {
+														"value": "@{item().table}",
+														"type": "Expression"
+													},
+													"cdc": {
+														"value": "@{item().table, '_' ,variables('current'))}",
+														"type": "Expression"
+													}
 												}
 											},
 											"enableLogging": false,
