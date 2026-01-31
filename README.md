@@ -70,18 +70,3 @@ The solution follows the **Medallion Architecture** to ensure data reliability a
 - BI-ready datasets for reporting tools  
 
 ---
-
-## 📁 Project Structure
-```text
-spotify-data-engineering-project/
-├── data/
-│   ├── bronze/
-│   ├── silver/
-│   └── gold/
-├── adf/
-│   └── pipelines/
-├── databricks/
-│   └── notebooks/
-├── synapse/
-│   └── sql/
-└── README.md
