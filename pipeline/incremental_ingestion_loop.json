@@ -164,7 +164,7 @@
 							"userProperties": [],
 							"typeProperties": {
 								"expression": {
-									"value": "@greater(activity('Copy data to bronze').output.dataRead, 0)",
+									"value": "@greater(activity('Copy data to bronze').output.rowsRead, 0)",
 									"type": "Expression"
 								},
 								"ifFalseActivities": [
