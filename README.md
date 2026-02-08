@@ -189,4 +189,4 @@ To harden this project for enterprise use:
 
 ## 10) Authoring Notes
 
-This project combines ADF metadata-driven ingestion with Databricks CDC/SCD processing to illustrate a complete medallion-style analytics workflow for music streaming behavior.
+This project combines ADF metadata-driven ingestion with Databricks CDC/SCD processing to illustrate a complete medallion-style analytics workflow for music streaming behavior. Thanks for visiting
