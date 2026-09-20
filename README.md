@@ -4,23 +4,45 @@
 ![ADF](https://img.shields.io/badge/Orchestration-Azure%20Data%20Factory-FF7F00)
 ![Databricks](https://img.shields.io/badge/Compute-Databricks-EA4335)
 ![Delta](https://img.shields.io/badge/Storage-Delta%20Lake-0F9D58)
+![DLT](https://img.shields.io/badge/Processing-Delta%20Live%20Tables-8E44AD)
 ![Status](https://img.shields.io/badge/Status-Active-success)
 
-An end-to-end data engineering project that ingests Spotify-style dimensional/fact data from Azure SQL, incrementally lands it in ADLS Gen2, and curates silver/gold models in Databricks using streaming CDC patterns.
+An end-to-end Azure data engineering project that incrementally ingests Spotify-style dimensional and fact data from Azure SQL, lands it in ADLS Gen2, and processes it in Databricks using streaming CDC patterns and SCD Type 2 transformations.
 
 ---
 
-## 1) Project Overview
+## Table of Contents
 
-This repository demonstrates a modern Azure-native analytics pipeline with:
+- [Project Overview](#project-overview)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Data Model](#data-model)
+- [Incremental Ingestion](#incremental-ingestion-adf)
+- [Databricks Processing](#databricks-processing)
+- [Repository Structure](#repository-structure)
+- [Deployment and Execution](#deployment-and-execution)
+- [Testing and Quality](#testing-and-quality)
+- [Productionization](#productionization-recommendations)
+- [Future Enhancements](#future-enhancements)
+- [Author](#author)
 
-- **Incremental ingestion from Azure SQL** using Azure Data Factory (ADF).
-- **Bronze landing in ADLS Gen2** in Parquet format.
-- **CDC watermark tracking** per table using JSON metadata files.
-- **Silver/Gold processing in Databricks** with Delta Live Tables (DLT)-style transformations.
-- **SCD Type 2 handling** for dimensions and fact stream updates.
+---
 
-The primary business entities in the model are:
+## Project Overview
+
+This repository demonstrates a modern Azure-native data platform for music streaming analytics.
+
+The pipeline combines:
+
+- **Azure SQL Database** as the source system.
+- **Azure Data Factory** for metadata-driven incremental ingestion.
+- **ADLS Gen2** for Bronze landing and CDC control metadata.
+- **Azure Databricks** for Silver and Gold processing.
+- **Delta Live Tables** for streaming CDC and curated target tables.
+- **SCD Type 2** handling for historical dimension and fact changes.
+- **Databricks Asset Bundles** for repeatable deployment across environments.
+
+Core business entities:
 
 - `DimUser`
 - `DimArtist`
@@ -30,163 +52,401 @@ The primary business entities in the model are:
 
 ---
 
-## 2) High-Level Architecture
+## Architecture
 
-```text
-Azure SQL (source tables)
-        |
-        v
-Azure Data Factory (incremental copy + CDC control)
-        |
-        v
-ADLS Gen2 / bronze (Parquet data + cdc.json)
-        |
-        v
-Databricks (silver tables)
-        |
-        v
-Databricks DLT / gold tables (SCD Type 2)
+### High-Level Architecture
+
+```mermaid
+flowchart LR
+    A["Azure SQL Source"] --> B["Azure Data Factory"]
+    B --> C["ADLS Gen2 Bronze"]
+    C --> D["Databricks Silver"]
+    D --> E["Delta Live Tables / Gold"]
+    E --> F["SCD Type 2 Tables"]
+    F --> G["Analytics / BI"]
+    B --> H["CDC Control Metadata"]
+    H --> B
+
+    style A fill:#dbeafe,stroke:#333,stroke-width:1px
+    style B fill:#bbf,stroke:#333,stroke-width:1px
+    style C fill:#eee,stroke:#333,stroke-width:1px
+    style D fill:#ffedd5,stroke:#333,stroke-width:1px
+    style E fill:#e0e7ff,stroke:#333,stroke-width:1px
+    style F fill:#dfd,stroke:#333,stroke-width:1px
+    style G fill:#dbeafe,stroke:#333,stroke-width:1px
+    style H fill:#fde68a,stroke:#333,stroke-width:1px
 ```
 
-### Key platform components
+### End-to-End Data Flow
 
-- **Azure Data Factory** for orchestration and incremental extraction.
-- **Azure SQL Database** as operational source.
-- **Azure Data Lake Storage Gen2** as landing and metadata store.
-- **Databricks Asset Bundle** for reproducible pipeline/job deployment.
+```mermaid
+flowchart TD
+    Source["Azure SQL Tables"] --> Lookup["Read Last CDC Watermark"]
+    Lookup --> MaxCDC["Read Current Max CDC Value"]
+    MaxCDC --> Filter{"New Records Available?"}
+    Filter -->|Yes| Copy["ADF Incremental Copy"]
+    Copy --> Bronze["ADLS Gen2 Bronze Parquet"]
+    Bronze --> Silver["Databricks Silver Tables"]
+    Silver --> Gold["DLT Gold Transformations"]
+    Gold --> CDC["Auto CDC / SCD Type 2"]
+    CDC --> Analytics["Analytics Ready Tables"]
+    Analytics --> BI["BI / Reporting"]
+    Copy --> Update["Update cdc.json"]
+    Update --> Lookup
+    Filter -->|No| Skip["No Incremental Data"]
+
+    style Source fill:#dbeafe
+    style Lookup fill:#bbf
+    style MaxCDC fill:#c7d2fe
+    style Filter fill:#fde68a
+    style Copy fill:#bbf
+    style Bronze fill:#eee
+    style Silver fill:#ffedd5
+    style Gold fill:#e0e7ff
+    style CDC fill:#dfd
+    style Analytics fill:#ecfdf5
+    style BI fill:#dbeafe
+    style Update fill:#fff7ed
+    style Skip fill:#fee2e2
+```
+
+### Detailed Platform Architecture
+
+```mermaid
+flowchart TD
+    subgraph Source["Source Layer"]
+        SQL["Azure SQL Database"]
+        Initial["spotify_initial_load.sql"]
+        Increment["spotify_incremental_load.sql"]
+    end
+
+    subgraph ADF["Azure Data Factory"]
+        Single["incremental_ingestion"]
+        Loop["incremental_ingestion_loop"]
+        Callback["Loop + Failure Web Activity"]
+    end
+
+    subgraph Storage["ADLS Gen2"]
+        Bronze["Bronze Table Folders"]
+        CDC["cdc.json Control Files"]
+    end
+
+    subgraph DBX["Azure Databricks"]
+        Silver["Silver Tables"]
+        DLT["Delta Live Tables"]
+        User["DimUser"]
+        Artist["DimArtist"]
+        Track["DimTrack"]
+        Date["DimDate"]
+        Fact["FactStream"]
+        Bundle["Databricks Asset Bundle"]
+    end
+
+    subgraph Consumption["Consumption"]
+        Analytics["SQL / Analytics"]
+        BI["BI / Dashboards"]
+    end
+
+    Initial --> SQL
+    Increment --> SQL
+    SQL --> Single
+    SQL --> Loop
+    Single --> Bronze
+    Loop --> Bronze
+    Callback --> Loop
+    CDC --> Single
+    CDC --> Loop
+    Bronze --> Silver
+    Silver --> DLT
+    DLT --> User
+    DLT --> Artist
+    DLT --> Track
+    DLT --> Date
+    DLT --> Fact
+    Bundle --> DLT
+    User --> Analytics
+    Artist --> Analytics
+    Track --> Analytics
+    Date --> Analytics
+    Fact --> Analytics
+    Analytics --> BI
+    Bronze --> CDC
+
+    style SQL fill:#dbeafe
+    style Single fill:#bbf
+    style Loop fill:#c7d2fe
+    style Callback fill:#fff7ed
+    style Bronze fill:#eee
+    style CDC fill:#fde68a
+    style Silver fill:#ffedd5
+    style DLT fill:#e0e7ff
+    style User fill:#ecfdf5
+    style Artist fill:#ecfdf5
+    style Track fill:#ecfdf5
+    style Date fill:#ecfdf5
+    style Fact fill:#dfd
+    style Bundle fill:#eef2ff
+    style Analytics fill:#dbeafe
+    style BI fill:#dcfce7
+```
+
+### Architecture Notes
+
+- **Azure SQL** contains the source dimensional and streaming data.
+- **ADF** performs metadata-driven, watermark-based incremental extraction.
+- **ADLS Bronze** stores each incremental batch as Parquet.
+- **CDC metadata** is maintained in `cdc.json` files for table-level watermark tracking.
+- **Databricks Silver** provides the curated processing layer.
+- **DLT** builds streaming targets and applies automated CDC handling.
+- **SCD Type 2** preserves historical changes for supported entities.
+- **Asset Bundles** provide repeatable Databricks resource deployment.
+- **Analytics / BI** consumes the curated Gold datasets.
 
 ---
 
-## 3) Repository Structure
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Source | Azure SQL Database |
+| Ingestion | Azure Data Factory |
+| Data Lake | Azure Data Lake Storage Gen2 |
+| Processing | Azure Databricks |
+| Transformation | Delta Live Tables |
+| Language | Python / PySpark / SQL |
+| Storage Format | Parquet / Delta |
+| Change Data | CDC / Auto CDC |
+| History | SCD Type 2 |
+| Deployment | Databricks Asset Bundles |
+| Testing | Pytest |
+
+---
+
+## Data Model
+
+The project uses a star-schema-like structure:
+
+### Dimensions
+
+- `DimUser`
+- `DimArtist`
+- `DimTrack`
+- `DimDate`
+
+### Fact
+
+- `FactStream`
+
+```mermaid
+erDiagram
+    FACTSTREAM }o--|| DIMUSER : user_id
+    FACTSTREAM }o--|| DIMARTIST : artist_id
+    FACTSTREAM }o--|| DIMTRACK : track_id
+    FACTSTREAM }o--|| DIMDATE : date
+
+    DIMUSER {
+        string user_id
+        string user_name
+        string country
+    }
+
+    DIMARTIST {
+        string artist_id
+        string artist_name
+        string genre
+    }
+
+    DIMTRACK {
+        string track_id
+        string track_name
+        string artist_id
+    }
+
+    DIMDATE {
+        date date
+        int year
+        int month
+    }
+
+    FACTSTREAM {
+        string stream_id
+        string user_id
+        string artist_id
+        string track_id
+        timestamp stream_timestamp
+    }
+```
+
+> The diagram represents the logical model documented by the project. Exact physical column definitions should be validated against the deployed SQL and Databricks schemas.
+
+---
+
+## Incremental Ingestion (ADF)
+
+The ADF layer implements watermark-based incremental ingestion for multiple tables.
+
+### Processing Pattern
+
+1. Read the previous CDC watermark from `bronze/<table>_CDC/cdc.json`.
+2. Query Azure SQL using the table-specific CDC column.
+3. Extract only rows where `cdc_col > last_watermark`.
+4. Write the increment to `bronze/<table>/<timestamp>` in Parquet.
+5. Calculate the latest source CDC value when rows are ingested.
+6. Overwrite `cdc.json` with the latest watermark.
+7. Remove empty landing artifacts when no rows are available.
+
+### Pipeline Variants
+
+- `pipeline/incremental_ingestion.json` - parameterized single-table ingestion.
+- `pipeline/incremental_ingestion_loop.json` - metadata-driven multi-table ingestion.
+- `pipeline/incremental_ingestion_loop_webactivity.json` - multi-table loop with failure callback handling.
+
+The loop supports table-specific CDC columns such as `updated_at`, `date`, and `stream_timestamp`.
+
+---
+
+## Databricks Processing
+
+The Gold transformation modules are located under:
+
+`databricks/src/gold/dlt/transformations/`
+
+### Processing Pattern
+
+- Read streaming data from `spotify-catalog.silver.*` sources.
+- Build streaming target tables for dimensions and facts.
+- Apply `create_auto_cdc_flow(...)` for change processing.
+- Use business keys and sequence columns for deterministic change application.
+- Store changes as **SCD Type 2** where configured.
+
+### Data Quality
+
+`DimUser.py` includes a quality expectation that drops records where `user_id` is null.
+
+---
+
+## Repository Structure
 
 ```text
 .
-├── pipeline/                     # ADF pipelines (single-table + loop versions)
-├── dataset/                      # ADF dataset definitions (dynamic Parquet/JSON)
-├── linkedService/                # ADF linked services (Azure SQL + ADLS)
-├── files/                        # Utility files such as cdc.json templates
-├── sql/                          # Source schema + sample load scripts
+├── pipeline/
+│   ├── incremental_ingestion.json
+│   ├── incremental_ingestion_loop.json
+│   └── incremental_ingestion_loop_webactivity.json
+├── dataset/
+│   └── ... ADF dataset definitions
+├── linkedService/
+│   └── ... Azure SQL and ADLS connections
+├── files/
+│   ├── cdc.json
+│   └── empty.json
+├── sql/
+│   ├── spotify_initial_load.sql
+│   └── spotify_incremental_load.sql
 └── databricks/
-    ├── resources/                # Databricks pipeline/job resource definitions
+    ├── resources/
     ├── src/gold/dlt/transformations/
     │   ├── DimArtist.py
     │   ├── DimDate.py
     │   ├── DimTrack.py
     │   ├── DimUser.py
     │   └── FactStream.py
-    ├── tests/                    # Pytest sample tests
-    ├── pyproject.toml            # Python project + developer dependencies
-    └── databricks.yml            # Bundle targets (dev/prod)
+    ├── tests/
+    ├── pyproject.toml
+    └── databricks.yml
 ```
 
 ---
 
-## 4) Data Model
+## Deployment and Execution
 
-The project uses a star-schema-like model:
+### SQL Source Setup
 
-- **Dimensions**: `DimUser`, `DimArtist`, `DimTrack`, `DimDate`
-- **Fact**: `FactStream`
+Run the initial script once:
 
-`sql/spotify_initial_load.sql` contains DDL for all tables and large seed datasets for initial testing. `sql/spotify_incremental_load.sql` provides additional inserts to simulate incremental arrivals.
+```bash
+sql/spotify_initial_load.sql
+```
 
----
+Use the incremental script to simulate subsequent source arrivals:
 
-## 5) Incremental Ingestion (ADF)
+```bash
+sql/spotify_incremental_load.sql
+```
 
-The ADF pipelines implement watermark-based ingestion with CDC metadata files:
-
-### Core behavior
-
-1. Read last watermark (`cdc`) from `bronze/<table>_CDC/cdc.json`.
-2. Extract only rows where `cdc_col > last_watermark` from Azure SQL.
-3. Write the increment to `bronze/<table>/<table>_<utc_timestamp>` in Parquet.
-4. If rows were ingested, compute latest source max(cdc_col) and overwrite `cdc.json`.
-5. If no rows were ingested, delete the empty landing artifact.
-
-### Pipeline variants
-
-- `pipeline/incremental_ingestion.json`: parameterized single-table flow.
-- `pipeline/incremental_ingestion_loop.json`: `ForEach` loop over multiple tables.
-- `pipeline/incremental_ingestion_loop_webactivity.json`: loop + failure Web Activity callback.
-
-Default loop input includes all five core tables with table-specific CDC columns (`updated_at`, `date`, `stream_timestamp`).
-
----
-
-## 6) Databricks Processing
-
-Gold DLT transformation modules in `databricks/src/gold/dlt/transformations/`:
-
-- Read streaming data from `spotify-catalog.silver.*` source tables.
-- Create streaming target tables (`dimuser`, `dimartist`, `dimtrack`, `dimdate`, `factstream`).
-- Apply `create_auto_cdc_flow(...)` with:
-  - business keys (`user_id`, `artist_id`, etc.)
-  - sequence columns (`updated_at`, `date`, `stream_timestamp`)
-  - `stored_as_scd_type = 2`
-
-`DimUser.py` also enforces a quality expectation (`user_id is not null`) using `dlt.expect_all_or_drop`.
-
----
-
-## 7) Deployment and Execution
-
-### A) SQL source setup
-
-- Run `sql/spotify_initial_load.sql` once to create and seed tables.
-- Run `sql/spotify_incremental_load.sql` to simulate later increments.
-
-### B) ADF setup
+### ADF Setup
 
 1. Import linked services from `linkedService/`.
 2. Import datasets from `dataset/`.
-3. Import pipeline JSON from `pipeline/`.
-4. Create initial CDC files in ADLS using `files/cdc.json` / `files/empty.json` conventions.
-5. Trigger pipeline with table parameters or loop array.
+3. Import pipelines from `pipeline/`.
+4. Create the initial CDC metadata files in ADLS.
+5. Trigger the parameterized pipeline or multi-table loop.
 
-### C) Databricks setup
+### Databricks Setup
 
-From `databricks/`:
+From the `databricks/` directory:
 
 ```bash
 uv sync --dev
-
 databricks bundle deploy --target dev
-# or
-# databricks bundle deploy --target prod
-
 databricks bundle run
 ```
 
-The bundle defines both **dev** and **prod** targets and deploys resources declared in `databricks/resources/`.
+For production-style deployment:
+
+```bash
+databricks bundle deploy --target prod
+```
 
 ---
 
-## 8) Testing and Quality
+## Testing and Quality
 
-A sample pytest test is included under `databricks/tests/` to validate local Databricks-connected execution patterns.
+Run the included pytest tests:
 
 ```bash
 cd databricks
 uv run pytest
 ```
 
-You can extend tests to validate schema drift handling, CDC idempotency, and expectation metrics.
+Recommended additional test coverage:
+
+- CDC watermark progression.
+- Duplicate and idempotent ingestion.
+- Schema drift handling.
+- SCD Type 2 history validation.
+- Data quality expectation results.
+- End-to-end Bronze to Gold verification.
 
 ---
 
-## 9) Productionization Recommendations
+## Productionization Recommendations
 
-To harden this project for enterprise use:
+For production workloads, consider:
 
-- Move secrets/credentials to **Azure Key Vault** + managed identities.
-- Add CI/CD for ADF JSON and Databricks bundle deployments.
-- Add data quality dashboards (expectation pass/fail trends).
-- Introduce partitioning/OPTIMIZE/ZORDER strategies for large `FactStream` volumes.
-- Add observability for ADF + Databricks runs (alerts, SLA checks, retries).
+- Azure Key Vault and managed identities for secrets.
+- Centralized monitoring for ADF and Databricks.
+- Retry policies and pipeline failure notifications.
+- Data quality scorecards and expectation monitoring.
+- Partitioning and optimization for large `FactStream` volumes.
+- Automated CI/CD for ADF artifacts and Databricks Bundles.
+- Schema evolution and late-arriving data handling.
+- Data lineage and governance through Unity Catalog.
 
 ---
 
-## 10) Authoring Notes
+## Future Enhancements
 
-This project combines ADF metadata-driven ingestion with Databricks CDC/SCD processing to illustrate a complete medallion-style analytics workflow for music streaming behavior. Thanks for visiting
+- Metadata-driven source configuration across additional domains.
+- More robust late-arriving CDC handling.
+- Automated data quality dashboards.
+- Enhanced BI semantic modeling.
+- Full CI/CD pipeline for Azure and Databricks components.
+- Performance benchmarks for streaming and incremental workloads.
+
+---
+
+## Author
+
+**Swapnil Take**  
+Azure Data Engineer | Azure Data Factory | Azure Databricks | PySpark | SQL | ADLS Gen2 | Delta Lake
